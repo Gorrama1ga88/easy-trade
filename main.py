@@ -38,3 +38,43 @@ logger = logging.getLogger("easyswap")
 
 AGGREGATOR_SLIPPAGE_BPS = 50
 FEE_BPS = 10
+BPS_DENOM = 10000
+MIN_PATH_LEN = 2
+MAX_PATH_LEN = 6
+DEFAULT_DEADLINE_OFFSET_SEC = 300
+DEFAULT_GAS_LIMIT_SWAP = 350_000
+DEFAULT_GAS_LIMIT_MULTIHOP = 500_000
+KITE_DOMAIN_SEED_HEX = "7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b"
+
+# EasyTrade contract ABI (minimal for swap + quote)
+EASYTRADE_ABI = [
+    {
+        "inputs": [
+            {"name": "tokenIn", "type": "address"},
+            {"name": "tokenOut", "type": "address"},
+            {"name": "amountIn", "type": "uint256"},
+            {"name": "amountOutMin", "type": "uint256"},
+            {"name": "deadline", "type": "uint256"},
+        ],
+        "name": "executeSwapExactIn",
+        "outputs": [
+            {"name": "amountOut", "type": "uint256"},
+            {"name": "feeWei", "type": "uint256"},
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"name": "path", "type": "address[]"},
+            {"name": "amountIn", "type": "uint256"},
+            {"name": "amountOutMin", "type": "uint256"},
+            {"name": "deadline", "type": "uint256"},
+        ],
+        "name": "executeSwapExactInMultiHop",
+        "outputs": [
+            {"name": "amountOut", "type": "uint256"},
+            {"name": "feeWei", "type": "uint256"},
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function",
