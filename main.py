@@ -158,3 +158,43 @@ CHAIN_RPC = {
 
 
 class Chain(Enum):
+    MAINNET = 1
+    GOERLI = 5
+    OPTIMISM = 10
+    POLYGON = 137
+    ARBITRUM = 42161
+    BASE = 8453
+    BSC = 56
+    AVALANCHE = 43114
+
+
+# -----------------------------------------------------------------------------
+# Data types
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class QuoteResult:
+    amount_in: int
+    amount_out_est: int
+    amount_out_min_suggested: int
+    fee_bps: int
+    path: list[str]
+    router_address: str
+    chain_id: int
+    timestamp: float = field(default_factory=time.time)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "amount_in": self.amount_in,
+            "amount_out_est": self.amount_out_est,
+            "amount_out_min_suggested": self.amount_out_min_suggested,
+            "fee_bps": self.fee_bps,
+            "path": self.path,
+            "router_address": self.router_address,
+            "chain_id": self.chain_id,
+            "timestamp": self.timestamp,
+        }
+
+
+@dataclass
