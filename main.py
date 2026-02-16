@@ -198,3 +198,43 @@ class QuoteResult:
 
 
 @dataclass
+class SwapReceipt:
+    tx_hash: str
+    amount_in: int
+    amount_out: int
+    fee_wei: int
+    swap_id: int
+    success: bool
+    block_number: Optional[int] = None
+    gas_used: Optional[int] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "tx_hash": self.tx_hash,
+            "amount_in": self.amount_in,
+            "amount_out": self.amount_out,
+            "fee_wei": self.fee_wei,
+            "swap_id": self.swap_id,
+            "success": self.success,
+            "block_number": self.block_number,
+            "gas_used": self.gas_used,
+        }
+
+
+# -----------------------------------------------------------------------------
+# Encoding / hashing (unique names)
+# -----------------------------------------------------------------------------
+
+
+def kite_domain_hash(chain_id: int, contract_address: str) -> bytes:
+    payload = f"EasyTrade_Kite_{chain_id}_{contract_address}"
+    return hashlib.sha256(payload.encode()).digest()
+
+
+def encode_path(path: list[str]) -> bytes:
+    if not path or len(path) < MIN_PATH_LEN or len(path) > MAX_PATH_LEN:
+        raise ValueError("path length must be between 2 and 6")
+    return b"".join(bytes.fromhex(addr[2:].lower().zfill(40)) if addr.startswith("0x") else bytes.fromhex(addr.lower().zfill(40)) for addr in path)
+
+
+def decode_uint256_list(data: bytes) -> list[int]:
