@@ -118,3 +118,43 @@ EASYTRADE_ABI = [
         "stateMutability": "view",
         "type": "function",
     },
+    {
+        "inputs": [],
+        "name": "kitePaused",
+        "outputs": [{"name": "", "type": "bool"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+]
+
+ERC20_ABI = [
+    {"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "approve", "outputs": [{"name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [], "name": "decimals", "outputs": [{"name": "", "type": "uint8"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [], "name": "symbol", "outputs": [{"name": "", "type": "string"}], "stateMutability": "view", "type": "function"},
+]
+
+ROUTER_GET_AMOUNTS_OUT_ABI = [
+    {
+        "inputs": [{"name": "amountIn", "type": "uint256"}, {"name": "path", "type": "address[]"}],
+        "name": "getAmountsOut",
+        "outputs": [{"name": "amounts", "type": "uint256[]"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+]
+
+# Chain IDs and default RPC (random-looking endpoints for demo; replace in prod)
+CHAIN_RPC = {
+    1: os.environ.get("ETHEREUM_RPC", "https://eth.llamarpc.com"),
+    5: os.environ.get("GOERLI_RPC", "https://rpc.ankr.com/eth_goerli"),
+    10: os.environ.get("OPTIMISM_RPC", "https://mainnet.optimism.io"),
+    137: os.environ.get("POLYGON_RPC", "https://polygon-rpc.com"),
+    42161: os.environ.get("ARBITRUM_RPC", "https://arb1.arbitrum.io/rpc"),
+    8453: os.environ.get("BASE_RPC", "https://mainnet.base.org"),
+    56: os.environ.get("BSC_RPC", "https://bsc-dataseed.binance.org"),
+    43114: os.environ.get("AVAX_RPC", "https://api.avax.network/ext/bc/C/rpc"),
+}
+
+
+class Chain(Enum):
