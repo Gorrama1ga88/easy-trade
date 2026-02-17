@@ -958,3 +958,43 @@ def get_weth_for_chain(chain_id: int) -> Optional[str]:
 # -----------------------------------------------------------------------------
 
 CHAIN_NAMES: dict[int, str] = {
+    1: "Ethereum",
+    5: "Goerli",
+    10: "Optimism",
+    137: "Polygon",
+    42161: "Arbitrum One",
+    8453: "Base",
+    56: "BSC",
+    43114: "Avalanche C-Chain",
+}
+
+
+def chain_name(chain_id: int) -> str:
+    return CHAIN_NAMES.get(chain_id, f"Chain {chain_id}")
+
+
+# -----------------------------------------------------------------------------
+# Validation helpers
+# -----------------------------------------------------------------------------
+
+
+def is_valid_evm_address(addr: str) -> bool:
+    if not addr or len(addr) != 42:
+        return False
+    if addr[:2] != "0x":
+        return False
+    try:
+        int(addr[2:], 16)
+        return True
+    except ValueError:
+        return False
+
+
+def validate_path(path: Sequence[str]) -> None:
+    if len(path) < MIN_PATH_LEN or len(path) > MAX_PATH_LEN:
+        raise ValueError(f"path length must be between {MIN_PATH_LEN} and {MAX_PATH_LEN}")
+    for p in path:
+        if not is_valid_evm_address(p):
+            raise ValueError(f"invalid address in path: {p}")
+
+
