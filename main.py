@@ -318,3 +318,43 @@ class EasySwapClient:
 
     def is_paused(self) -> bool:
         return self._contract.functions.kitePaused().call()
+
+    def get_router(self) -> str:
+        return self._contract.functions.router().call()
+
+    def get_fee_collector(self) -> str:
+        return self._contract.functions.feeCollector().call()
+
+    def get_weth(self) -> str:
+        return self._contract.functions.weth().call()
+
+    def get_swap_count(self) -> int:
+        return self._contract.functions.getSwapCount().call()
+
+    def quote_exact_in(self, token_in: str, token_out: str, amount_in: int) -> int:
+        token_in = to_checksum(token_in)
+        token_out = to_checksum(token_out)
+        return self._contract.functions.quoteExactIn(token_in, token_out, amount_in).call()
+
+    def quote_exact_in_with_slippage(
+        self,
+        token_in: str,
+        token_out: str,
+        amount_in: int,
+        slippage_bps: int = AGGREGATOR_SLIPPAGE_BPS,
+    ) -> QuoteResult:
+        amount_out_est = self.quote_exact_in(token_in, token_out, amount_in)
+        amount_out_min = apply_slippage_bps(amount_out_est, slippage_bps)
+        fee = fee_from_amount_bps(amount_in)
+        return QuoteResult(
+            amount_in=amount_in,
+            amount_out_est=amount_out_est,
+            amount_out_min_suggested=amount_out_min,
+            fee_bps=FEE_BPS,
+            path=[to_checksum(token_in), to_checksum(token_out)],
+            router_address=self.get_router(),
+            chain_id=self._chain_id,
+        )
+
+    def build_swap_tx(
+        self,
