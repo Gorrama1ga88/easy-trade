@@ -638,3 +638,43 @@ def main() -> None:
     sub = parser.add_subparsers(dest="cmd", required=True)
     # quote
     p_quote = sub.add_parser("quote", help="Get quote for tokenIn -> tokenOut")
+    p_quote.add_argument("token_in", type=str)
+    p_quote.add_argument("token_out", type=str)
+    p_quote.add_argument("amount_in", type=str, help="Human-readable amount, e.g. 1.5")
+    p_quote.add_argument("--decimals-in", type=int, default=18)
+    p_quote.add_argument("--slippage-bps", type=int, default=AGGREGATOR_SLIPPAGE_BPS)
+    # swap-count
+    p_count = sub.add_parser("swap-count", help="Get total swap count")
+    # info
+    p_info = sub.add_parser("info", help="Aggregator info (router, fee collector, paused)")
+    args = parser.parse_args()
+
+    w3 = get_w3(args.chain, args.rpc)
+    client = EasySwapClient(w3, args.aggregator, args.chain)
+
+    if args.cmd == "quote":
+        amount_raw = parse_amount(args.amount_in, args.decimals_in)
+        q = client.quote_exact_in_with_slippage(
+            args.token_in, args.token_out, amount_raw, slippage_bps=args.slippage_bps
+        )
+        print(json.dumps(q.to_dict(), indent=2))
+        decimals_out = get_token_decimals(w3, args.token_out)
+        print("amount_out_min (human):", format_amount(q.amount_out_min_suggested, decimals_out))
+    elif args.cmd == "swap-count":
+        print(client.get_swap_count())
+    elif args.cmd == "info":
+        print("router:", client.get_router())
+        print("fee_collector:", client.get_fee_collector())
+        print("weth:", client.get_weth())
+        print("paused:", client.is_paused())
+        print("swap_count:", client.get_swap_count())
+
+
+if __name__ == "__main__":
+    main()
+
+
+# -----------------------------------------------------------------------------
+# Mock / testing (local simulation without chain)
+# -----------------------------------------------------------------------------
+
