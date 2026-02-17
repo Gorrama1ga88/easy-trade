@@ -798,3 +798,43 @@ def create_client_from_config(config: Optional[dict[str, Any]] = None) -> EasySw
 
 def batch_quote(
     client: EasySwapClient,
+    pairs: list[tuple[str, str]],
+    amount_in: int,
+    slippage_bps: int = AGGREGATOR_SLIPPAGE_BPS,
+) -> list[QuoteResult]:
+    results = []
+    for token_in, token_out in pairs:
+        try:
+            q = client.quote_exact_in_with_slippage(
+                token_in, token_out, amount_in, slippage_bps=slippage_bps
+            )
+            results.append(q)
+        except Exception as e:
+            logger.warning("quote failed for %s -> %s: %s", token_in, token_out, e)
+    return results
+
+
+# -----------------------------------------------------------------------------
+# Price impact (simplified)
+# -----------------------------------------------------------------------------
+
+
+def price_impact_bps(amount_in: int, amount_out: int, reserve_in: int, reserve_out: int) -> int:
+    if reserve_in == 0 or reserve_out == 0:
+        return 0
+    # constant product: amount_out ~ reserve_out * amount_in / (reserve_in + amount_in)
+    expected_out = (reserve_out * amount_in) // (reserve_in + amount_in)
+    if expected_out == 0:
+        return 10000
+    impact = (expected_out - amount_out) * BPS_DENOM // expected_out
+    return max(0, impact)
+
+
+# -----------------------------------------------------------------------------
+# Deadline helpers
+# -----------------------------------------------------------------------------
+
+
+def deadline_from_now(offset_sec: int = DEFAULT_DEADLINE_OFFSET_SEC) -> int:
+    return int(time.time()) + offset_sec
+
