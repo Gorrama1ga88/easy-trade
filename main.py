@@ -758,3 +758,43 @@ class MockEasySwapClient:
 
 
 def load_config(
+    config_path: Optional[str] = None,
+    env_prefix: str = "EASYSWAP_",
+) -> dict[str, Any]:
+    out = {}
+    if config_path and os.path.isfile(config_path):
+        with open(config_path, "r") as f:
+            try:
+                out = json.load(f)
+            except json.JSONDecodeError:
+                pass
+    for key, value in os.environ.items():
+        if key.startswith(env_prefix):
+            k = key[len(env_prefix):].lower()
+            if value.isdigit():
+                out[k] = int(value)
+            elif value.lower() in ("true", "false"):
+                out[k] = value.lower() == "true"
+            else:
+                out[k] = value
+    return out
+
+
+def create_client_from_config(config: Optional[dict[str, Any]] = None) -> EasySwapClient:
+    config = config or load_config()
+    chain_id = config.get("chain_id", 1)
+    rpc = config.get("rpc_url") or CHAIN_RPC.get(chain_id)
+    aggregator = config.get("aggregator_address")
+    if not aggregator:
+        raise ValueError("config must contain aggregator_address (or EASYSWAP_AGGREGATOR_ADDRESS)")
+    w3 = get_w3(chain_id, rpc)
+    return EasySwapClient(w3, aggregator, chain_id)
+
+
+# -----------------------------------------------------------------------------
+# Batch quote (multiple pairs)
+# -----------------------------------------------------------------------------
+
+
+def batch_quote(
+    client: EasySwapClient,
