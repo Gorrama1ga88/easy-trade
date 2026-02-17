@@ -918,3 +918,43 @@ ERC20_ABI.append(
 # Network detection
 # -----------------------------------------------------------------------------
 
+
+def detect_chain_from_rpc(rpc_url: str) -> int:
+    if Web3 is None:
+        raise RuntimeError("web3 not installed")
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    if not w3.is_connected():
+        raise ConnectionError(f"Could not connect to RPC: {rpc_url}")
+    return w3.eth.chain_id
+
+
+# -----------------------------------------------------------------------------
+# Export list
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# Chain-specific WETH and common token addresses (for reference only)
+# -----------------------------------------------------------------------------
+
+WETH_BY_CHAIN: dict[int, str] = {
+    1: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    5: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+    10: "0x4200000000000000000000000000000000000006",
+    137: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+    42161: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+    8453: "0x4200000000000000000000000000000000000006",
+    56: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    43114: "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+}
+
+
+def get_weth_for_chain(chain_id: int) -> Optional[str]:
+    return WETH_BY_CHAIN.get(chain_id)
+
+
+# -----------------------------------------------------------------------------
+# Human-readable chain names
+# -----------------------------------------------------------------------------
+
+CHAIN_NAMES: dict[int, str] = {
