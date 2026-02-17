@@ -838,3 +838,43 @@ def price_impact_bps(amount_in: int, amount_out: int, reserve_in: int, reserve_o
 def deadline_from_now(offset_sec: int = DEFAULT_DEADLINE_OFFSET_SEC) -> int:
     return int(time.time()) + offset_sec
 
+
+def deadline_from_block(w3: "Web3", block_offset: int = 20) -> int:
+    if Web3 is None:
+        return deadline_from_now(300)
+    block = w3.eth.block_number
+    return block + block_offset
+
+
+# -----------------------------------------------------------------------------
+# Gas estimation
+# -----------------------------------------------------------------------------
+
+
+def estimate_swap_gas(
+    client: EasySwapClient,
+    token_in: str,
+    token_out: str,
+    amount_in: int,
+    amount_out_min: int,
+    from_address: str,
+) -> int:
+    try:
+        tx = client.build_swap_tx(
+            token_in, token_out, amount_in, amount_out_min,
+            from_address=from_address,
+        )
+        tx["from"] = to_checksum(from_address)
+        tx["gas"] = None
+        est = client._w3.eth.estimate_gas(tx)
+        return est
+    except Exception as e:
+        logger.warning("gas estimation failed: %s", e)
+        return DEFAULT_GAS_LIMIT_SWAP
+
+
+# -----------------------------------------------------------------------------
+# Allowance check / approval
+# -----------------------------------------------------------------------------
+
+
