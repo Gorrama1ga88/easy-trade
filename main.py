@@ -478,3 +478,43 @@ class EasySwapClient:
             raise RuntimeError("aggregator is paused")
         tx = self.build_swap_multihop_tx(
             path, amount_in, amount_out_min,
+            deadline=deadline, from_address=account.address, gas_limit=gas_limit,
+        )
+        tx.pop("from", None)
+        signed = account.sign_transaction(tx)
+        tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
+        receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        success = receipt["status"] == 1
+        return SwapReceipt(
+            tx_hash=tx_hash.hex(),
+            amount_in=amount_in,
+            amount_out=0,
+            fee_wei=0,
+            swap_id=self.get_swap_count(),
+            success=success,
+            block_number=receipt.get("blockNumber"),
+            gas_used=receipt.get("gasUsed"),
+        )
+
+
+# -----------------------------------------------------------------------------
+# Router (getAmountsOut) helper for off-chain quote
+# -----------------------------------------------------------------------------
+
+
+def get_amounts_out_via_router(
+    w3: "Web3",
+    router_address: str,
+    amount_in: int,
+    path: list[str],
+) -> list[int]:
+    path = [to_checksum(p) for p in path]
+    router_contract = get_contract(w3, router_address, ROUTER_GET_AMOUNTS_OUT_ABI)
+    amounts = router_contract.functions.getAmountsOut(amount_in, path).call()
+    return list(amounts)
+
+
+def quote_via_router(
+    w3: "Web3",
+    router_address: str,
+    token_in: str,
