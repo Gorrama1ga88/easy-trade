@@ -438,3 +438,43 @@ class EasySwapClient:
         if max_priority_fee_per_gas is not None:
             tx["maxPriorityFeePerGas"] = max_priority_fee_per_gas
         signed = account.sign_transaction(tx)
+        tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
+        receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        success = receipt["status"] == 1
+        amount_out = 0
+        fee_wei = 0
+        swap_id = self.get_swap_count()
+        if success and receipt.get("logs"):
+            # Parse logs if needed; here we just use swap count
+            pass
+        return SwapReceipt(
+            tx_hash=tx_hash.hex(),
+            amount_in=amount_in,
+            amount_out=amount_out,
+            fee_wei=fee_wei,
+            swap_id=swap_id,
+            success=success,
+            block_number=receipt.get("blockNumber"),
+            gas_used=receipt.get("gasUsed"),
+        )
+
+    def execute_swap_multihop(
+        self,
+        path: list[str],
+        amount_in: int,
+        amount_out_min: int,
+        private_key: Optional[str] = None,
+        account: Optional["LocalAccount"] = None,
+        deadline: Optional[int] = None,
+        gas_limit: int = DEFAULT_GAS_LIMIT_MULTIHOP,
+    ) -> SwapReceipt:
+        if account is None and private_key:
+            if Account is None:
+                raise RuntimeError("eth_account not installed")
+            account = Account.from_key(private_key)
+        if account is None:
+            raise ValueError("provide either private_key or account")
+        if self.is_paused():
+            raise RuntimeError("aggregator is paused")
+        tx = self.build_swap_multihop_tx(
+            path, amount_in, amount_out_min,
