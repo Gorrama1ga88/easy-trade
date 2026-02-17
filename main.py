@@ -998,3 +998,43 @@ def validate_path(path: Sequence[str]) -> None:
             raise ValueError(f"invalid address in path: {p}")
 
 
+# -----------------------------------------------------------------------------
+# Log filtering (fetch KiteSwapExecuted in block range)
+# -----------------------------------------------------------------------------
+
+
+def fetch_swap_events(
+    w3: "Web3",
+    aggregator_address: str,
+    from_block: BlockIdentifier,
+    to_block: BlockIdentifier = "latest",
+) -> list[dict[str, Any]]:
+    if Web3 is None:
+        return []
+    topic = _kite_swap_topic()
+    if topic is None:
+        return []
+    logs = w3.eth.get_logs(
+        {
+            "address": to_checksum(aggregator_address),
+            "topics": [topic],
+            "fromBlock": from_block,
+            "toBlock": to_block,
+        }
+    )
+    out = []
+    for log_entry in logs:
+        parsed = parse_swap_log(dict(log_entry), aggregator_address)
+        if parsed:
+            out.append(parsed)
+    return out
+
+
+# -----------------------------------------------------------------------------
+# Exports
+# -----------------------------------------------------------------------------
+
+__all__ = [
+    "EasySwapClient",
+    "MockEasySwapClient",
+    "QuoteResult",
