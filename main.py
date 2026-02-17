@@ -878,3 +878,43 @@ def estimate_swap_gas(
 # -----------------------------------------------------------------------------
 
 
+def check_allowance(w3: "Web3", token: str, owner: str, spender: str) -> int:
+    c = get_erc20(w3, token)
+    return c.functions.allowance(to_checksum(owner), to_checksum(spender)).call()
+
+
+def ensure_allowance(
+    w3: "Web3",
+    token: str,
+    owner: "LocalAccount",
+    spender: str,
+    amount: int,
+    private_key: Optional[str] = None,
+) -> bool:
+    current = check_allowance(w3, token, owner.address, spender)
+    if current >= amount:
+        return True
+    if Account is None:
+        raise RuntimeError("eth_account required for approval tx")
+    acc = owner if isinstance(owner, LocalAccount) else Account.from_key(private_key)
+    c = get_erc20(w3, token)
+    tx = c.functions.approve(to_checksum(spender), 2**256 - 1).build_transaction(
+        {"from": acc.address}
+    )
+    tx.pop("from", None)
+    signed = acc.sign_transaction(tx)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    return True
+
+
+# Add allowance to ERC20_ABI for check_allowance
+ERC20_ABI.append(
+    {"inputs": [{"name": "owner", "type": "address"}, {"name": "spender", "type": "address"}], "name": "allowance", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}
+)
+
+
+# -----------------------------------------------------------------------------
+# Network detection
+# -----------------------------------------------------------------------------
+
