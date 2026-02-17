@@ -278,3 +278,43 @@ def to_checksum(addr: str) -> str:
 def get_contract(w3: "Web3", address: str, abi: list) -> "Contract":
     if Contract is None:
         raise RuntimeError("web3 not installed")
+    return w3.eth.contract(address=to_checksum(address), abi=abi)
+
+
+def get_erc20(w3: "Web3", token_address: str) -> "Contract":
+    return get_contract(w3, token_address, ERC20_ABI)
+
+
+def get_easytrade(w3: "Web3", aggregator_address: str) -> "Contract":
+    return get_contract(w3, aggregator_address, EASYTRADE_ABI)
+
+
+# -----------------------------------------------------------------------------
+# EasySwap client
+# -----------------------------------------------------------------------------
+
+
+class EasySwapClient:
+    """Single-file client for EasyTrade (Kite) aggregator."""
+
+    def __init__(
+        self,
+        w3: "Web3",
+        aggregator_address: str,
+        chain_id: Optional[int] = None,
+    ):
+        self._w3 = w3
+        self._chain_id = chain_id or w3.eth.chain_id
+        self._aggregator_address = to_checksum(aggregator_address)
+        self._contract = get_easytrade(w3, aggregator_address)
+
+    @property
+    def chain_id(self) -> int:
+        return self._chain_id
+
+    @property
+    def aggregator_address(self) -> str:
+        return self._aggregator_address
+
+    def is_paused(self) -> bool:
+        return self._contract.functions.kitePaused().call()
