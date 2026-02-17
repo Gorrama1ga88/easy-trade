@@ -358,3 +358,43 @@ class EasySwapClient:
 
     def build_swap_tx(
         self,
+        token_in: str,
+        token_out: str,
+        amount_in: int,
+        amount_out_min: int,
+        deadline: Optional[int] = None,
+        from_address: Optional[str] = None,
+        gas_limit: int = DEFAULT_GAS_LIMIT_SWAP,
+    ) -> dict[str, Any]:
+        deadline = deadline or (int(time.time()) + DEFAULT_DEADLINE_OFFSET_SEC)
+        token_in = to_checksum(token_in)
+        token_out = to_checksum(token_out)
+        fn = self._contract.functions.executeSwapExactIn(
+            token_in, token_out, amount_in, amount_out_min, deadline
+        )
+        tx = fn.build_transaction(
+            {
+                "from": to_checksum(from_address) if from_address else None,
+                "gas": gas_limit,
+            }
+        )
+        return tx
+
+    def build_swap_multihop_tx(
+        self,
+        path: list[str],
+        amount_in: int,
+        amount_out_min: int,
+        deadline: Optional[int] = None,
+        from_address: Optional[str] = None,
+        gas_limit: int = DEFAULT_GAS_LIMIT_MULTIHOP,
+    ) -> dict[str, Any]:
+        if len(path) < MIN_PATH_LEN or len(path) > MAX_PATH_LEN:
+            raise ValueError("path length must be between 2 and 6")
+        deadline = deadline or (int(time.time()) + DEFAULT_DEADLINE_OFFSET_SEC)
+        path = [to_checksum(p) for p in path]
+        fn = self._contract.functions.executeSwapExactInMultiHop(
+            path, amount_in, amount_out_min, deadline
+        )
+        tx = fn.build_transaction(
+            {
