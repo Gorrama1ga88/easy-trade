@@ -398,3 +398,43 @@ class EasySwapClient:
         )
         tx = fn.build_transaction(
             {
+                "from": to_checksum(from_address) if from_address else None,
+                "gas": gas_limit,
+            }
+        )
+        return tx
+
+    def execute_swap(
+        self,
+        token_in: str,
+        token_out: str,
+        amount_in: int,
+        amount_out_min: int,
+        private_key: Optional[str] = None,
+        account: Optional["LocalAccount"] = None,
+        deadline: Optional[int] = None,
+        gas_limit: int = DEFAULT_GAS_LIMIT_SWAP,
+        gas_price: Optional[int] = None,
+        max_fee_per_gas: Optional[int] = None,
+        max_priority_fee_per_gas: Optional[int] = None,
+    ) -> SwapReceipt:
+        if account is None and private_key:
+            if Account is None:
+                raise RuntimeError("eth_account not installed")
+            account = Account.from_key(private_key)
+        if account is None:
+            raise ValueError("provide either private_key or account")
+        if self.is_paused():
+            raise RuntimeError("aggregator is paused")
+        tx = self.build_swap_tx(
+            token_in, token_out, amount_in, amount_out_min,
+            deadline=deadline, from_address=account.address, gas_limit=gas_limit,
+        )
+        tx.pop("from", None)
+        if gas_price is not None:
+            tx["gasPrice"] = gas_price
+        if max_fee_per_gas is not None:
+            tx["maxFeePerGas"] = max_fee_per_gas
+        if max_priority_fee_per_gas is not None:
+            tx["maxPriorityFeePerGas"] = max_priority_fee_per_gas
+        signed = account.sign_transaction(tx)
