@@ -518,3 +518,43 @@ def quote_via_router(
     w3: "Web3",
     router_address: str,
     token_in: str,
+    token_out: str,
+    amount_in: int,
+) -> int:
+    path = [to_checksum(token_in), to_checksum(token_out)]
+    amounts = get_amounts_out_via_router(w3, router_address, amount_in, path)
+    return amounts[-1] if amounts else 0
+
+
+# -----------------------------------------------------------------------------
+# Token helpers
+# -----------------------------------------------------------------------------
+
+
+def get_token_decimals(w3: "Web3", token_address: str) -> int:
+    try:
+        c = get_erc20(w3, token_address)
+        return c.functions.decimals().call()
+    except Exception:
+        return 18
+
+
+def get_token_balance(w3: "Web3", token_address: str, account: str) -> int:
+    c = get_erc20(w3, token_address)
+    return c.functions.balanceOf(to_checksum(account)).call()
+
+
+def format_amount(amount: int, decimals: int) -> str:
+    return str(Decimal(amount) / (10**decimals))
+
+
+def parse_amount(amount_human: str, decimals: int) -> int:
+    return int(Decimal(amount_human) * (10**decimals))
+
+
+# -----------------------------------------------------------------------------
+# Event parsing (KiteSwapExecuted)
+# -----------------------------------------------------------------------------
+
+
+KITE_SWAP_EXECUTED_TOPIC = None
