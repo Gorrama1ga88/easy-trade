@@ -718,3 +718,43 @@ class MockEasySwapClient:
         # Mock: 1:1 with 0.1% fee deducted from output
         fee = amount_in * FEE_BPS // BPS_DENOM
         return amount_in - fee
+
+    def quote_exact_in_with_slippage(
+        self,
+        token_in: str,
+        token_out: str,
+        amount_in: int,
+        slippage_bps: int = AGGREGATOR_SLIPPAGE_BPS,
+    ) -> QuoteResult:
+        amount_out_est = self.quote_exact_in(token_in, token_out, amount_in)
+        amount_out_min = apply_slippage_bps(amount_out_est, slippage_bps)
+        return QuoteResult(
+            amount_in=amount_in,
+            amount_out_est=amount_out_est,
+            amount_out_min_suggested=amount_out_min,
+            fee_bps=FEE_BPS,
+            path=[token_in, token_out],
+            router_address=self._router,
+            chain_id=self._chain_id,
+        )
+
+    def simulate_swap(self, amount_in: int) -> SwapReceipt:
+        self._swap_count += 1
+        fee = fee_from_amount_bps(amount_in)
+        amount_out = self.quote_exact_in("0x0", "0x0", amount_in)  # dummy tokens
+        return SwapReceipt(
+            tx_hash="0x" + "0" * 64,
+            amount_in=amount_in,
+            amount_out=amount_out,
+            fee_wei=fee,
+            swap_id=self._swap_count,
+            success=True,
+        )
+
+
+# -----------------------------------------------------------------------------
+# Config loader (env + file)
+# -----------------------------------------------------------------------------
+
+
+def load_config(
