@@ -558,3 +558,43 @@ def parse_amount(amount_human: str, decimals: int) -> int:
 
 
 KITE_SWAP_EXECUTED_TOPIC = None
+
+def _kite_swap_topic():
+    global KITE_SWAP_EXECUTED_TOPIC
+    if KITE_SWAP_EXECUTED_TOPIC is None and Web3 is not None:
+        KITE_SWAP_EXECUTED_TOPIC = Web3.keccak(
+            text="KiteSwapExecuted(address,address,address,uint256,uint256,uint256,uint256)"
+        )
+    return KITE_SWAP_EXECUTED_TOPIC
+
+
+def get_kite_swap_topic() -> bytes:
+    """Return the event topic for KiteSwapExecuted (for log filtering)."""
+    t = _kite_swap_topic()
+    return t if t is not None else b""
+
+
+def parse_swap_log(log_entry: dict, aggregator_address: str) -> Optional[dict[str, Any]]:
+    try:
+        if log_entry.get("address", "").lower() != aggregator_address.lower():
+            return None
+        topics = log_entry.get("topics", [])
+        if not topics or (HexBytes(topics[0]) if isinstance(topics[0], str) else topics[0]) != _kite_swap_topic():
+            return None
+        data = log_entry.get("data", "0x")
+        if isinstance(data, str) and data.startswith("0x"):
+            data = bytes.fromhex(data[2:])
+        if len(data) < 3 * 32:
+            return None
+        amount_in = int.from_bytes(data[0:32], "big")
+        amount_out = int.from_bytes(data[32:64], "big")
+        fee_wei = int.from_bytes(data[64:96], "big")
+        swap_id = int.from_bytes(data[96:128], "big")
+        return {
+            "trader": "0x" + (log_entry["topics"][1].hex()[-40:] if len(log_entry["topics"]) > 1 else ""),
+            "amount_in": amount_in,
+            "amount_out": amount_out,
+            "fee_wei": fee_wei,
+            "swap_id": swap_id,
+        }
+    except Exception:
