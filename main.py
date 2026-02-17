@@ -238,3 +238,43 @@ def encode_path(path: list[str]) -> bytes:
 
 
 def decode_uint256_list(data: bytes) -> list[int]:
+    if len(data) < 32:
+        return []
+    try:
+        return [int.from_bytes(data[i : i + 32], "big") for i in range(0, len(data), 32)]
+    except Exception:
+        return []
+
+
+def apply_slippage_bps(amount: int, bps: int, denom: int = BPS_DENOM) -> int:
+    return amount * (denom - bps) // denom
+
+
+def fee_from_amount_bps(amount: int, bps: int = FEE_BPS, denom: int = BPS_DENOM) -> int:
+    return amount * bps // denom
+
+
+# -----------------------------------------------------------------------------
+# Web3 / contract helpers
+# -----------------------------------------------------------------------------
+
+
+def get_w3(chain_id: int, rpc_url: Optional[str] = None) -> "Web3":
+    if Web3 is None:
+        raise RuntimeError("web3 not installed; pip install web3")
+    url = rpc_url or CHAIN_RPC.get(chain_id, "http://127.0.0.1:8545")
+    w3 = Web3(Web3.HTTPProvider(url))
+    if not w3.is_connected():
+        raise ConnectionError(f"Could not connect to RPC: {url}")
+    return w3
+
+
+def to_checksum(addr: str) -> str:
+    if Web3 is None:
+        return addr
+    return Web3.to_checksum_address(addr)
+
+
+def get_contract(w3: "Web3", address: str, abi: list) -> "Contract":
+    if Contract is None:
+        raise RuntimeError("web3 not installed")
