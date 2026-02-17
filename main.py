@@ -678,3 +678,43 @@ if __name__ == "__main__":
 # Mock / testing (local simulation without chain)
 # -----------------------------------------------------------------------------
 
+
+class MockEasySwapClient:
+    """In-memory mock for tests; no RPC."""
+
+    def __init__(self, chain_id: int = 1):
+        self._chain_id = chain_id
+        self._swap_count = 0
+        self._paused = False
+        self._router = "0x" + "1" * 40
+        self._fee_collector = "0x" + "2" * 40
+        self._weth = "0x" + "3" * 40
+
+    @property
+    def chain_id(self) -> int:
+        return self._chain_id
+
+    def is_paused(self) -> bool:
+        return self._paused
+
+    def set_paused(self, paused: bool) -> None:
+        self._paused = paused
+
+    def get_router(self) -> str:
+        return self._router
+
+    def get_fee_collector(self) -> str:
+        return self._fee_collector
+
+    def get_weth(self) -> str:
+        return self._weth
+
+    def get_swap_count(self) -> int:
+        return self._swap_count
+
+    def quote_exact_in(self, token_in: str, token_out: str, amount_in: int) -> int:
+        if amount_in <= 0:
+            return 0
+        # Mock: 1:1 with 0.1% fee deducted from output
+        fee = amount_in * FEE_BPS // BPS_DENOM
+        return amount_in - fee
