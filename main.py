@@ -598,3 +598,43 @@ def parse_swap_log(log_entry: dict, aggregator_address: str) -> Optional[dict[st
             "swap_id": swap_id,
         }
     except Exception:
+        return None
+
+
+# -----------------------------------------------------------------------------
+# Retry and backoff
+# -----------------------------------------------------------------------------
+
+
+def with_retry(
+    fn: Callable[[], Any],
+    max_attempts: int = 3,
+    delay: float = 1.0,
+    backoff: float = 2.0,
+    exceptions: tuple = (Exception,),
+) -> Any:
+    last_err = None
+    for attempt in range(max_attempts):
+        try:
+            return fn()
+        except exceptions as e:
+            last_err = e
+            if attempt < max_attempts - 1:
+                time.sleep(delay * (backoff ** attempt))
+    raise last_err
+
+
+# -----------------------------------------------------------------------------
+# CLI
+# -----------------------------------------------------------------------------
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+    parser = argparse.ArgumentParser(description="EasySwap SDK — quote and swap via EasyTrade")
+    parser.add_argument("--chain", type=int, default=1, help="Chain ID")
+    parser.add_argument("--rpc", type=str, default=None, help="RPC URL")
+    parser.add_argument("--aggregator", type=str, required=True, help="EasyTrade contract address")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    # quote
+    p_quote = sub.add_parser("quote", help="Get quote for tokenIn -> tokenOut")
